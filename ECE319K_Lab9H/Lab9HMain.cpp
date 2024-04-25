@@ -40,8 +40,10 @@ const uint32_t LEDS[3] = {RED_LED, YELLOW_LED, GREEN_LED};
 #define BUTTON_RIGHT 1
 #define NUM_BULLETS 100
 
+bool nextStateFlag = false;
 bool updating = false;
 int8_t lang = -1;
+uint32_t score = 0;
 
 uint8_t updates;
 Sensors inputs;
@@ -65,17 +67,26 @@ UART comms;
 struct GameState {
     int stage;
     int minInterrupts;
-    struct GameState* next[16];
+    struct GameState* next[64];
 
     GameState() {}
 
     GameState(int stageNum, int time) {
-        for (int i = 0; i < 16; i ++) {
+        for (int i = 0; i < 64; i ++) {
             next[i] = this;
         }
 
         stage = stageNum;
         minInterrupts = time;
+    }
+
+    // Adds next states to next state based on binary input values to trigger change
+    void Initialize(uint8_t* inputs, GameState** nextStates, uint32_t numChanges) {
+        for (int i = 0; i < 64; i++) {
+            for (int j = 0; j < numChanges; j++) {
+                if ((i & inputs[j]) == inputs[j]) next[i] = nextStates[j];
+            }
+        }
     }
 };
 
@@ -95,12 +106,54 @@ GameState FSM[12] = {
     {2, 20}, // choose character screen
     {3, 1}, // game start + instructions state
     {4, 20}, // game play state
-    {5, 60}, // pause menu
-    {6, 60}, // win state
+    {5, 20}, // pause menu
+    {6, 20}, // win state
     {7, 20} // loss state
 };
 
-GameState* currentGameState = gameStart;
+GameState* currentGameState;
+
+void FSM_Initialize() {
+    uint8_t inputsLang[] = {1<<2};
+    GameState* nextStatesLang[] = {mainMenu};
+    uint32_t numChanges = 1;
+    langState->Initialize(inputsLang, nextStatesLang, numChanges);
+
+    uint8_t inputsMainMenu[] = {1<<1};
+    GameState* nextStatesMainMenu[] = {chooseCharacter};
+    numChanges = 1;
+    (mainMenu)->Initialize(inputsMainMenu, nextStatesMainMenu, numChanges);
+
+    uint8_t inputsChooseCharacter[] = {1<<5 | 1<<4};
+    GameState* nextStatesChooseCharacter[] = {gameStart};
+    numChanges = 1;
+    (chooseCharacter)->Initialize(inputsChooseCharacter, nextStatesChooseCharacter, numChanges);
+
+    uint8_t inputsGameStart[] = {1, 1<<3};
+    GameState* nextStatesGameStart[] = {gameEngine, gameEngine};
+    numChanges = 2;
+    (gameStart)->Initialize(inputsGameStart, nextStatesGameStart, numChanges);
+
+    uint8_t inputsGameEngine[] = {1, 1<<3, 1<<4, 1<<5, 1<<4 | 1<<5};
+    GameState* nextStatesGameEngine[] = {pauseState, pauseState, winState, loseState, gameEngine};
+    numChanges = 5;
+    (gameEngine)->Initialize(inputsGameEngine, nextStatesGameEngine, numChanges);
+
+    uint8_t inputsPauseState[] = {1, 1<<1};
+    GameState* nextStatesPauseState[] = {gameEngine, gameEngine};
+    numChanges = 2;
+    (pauseState)->Initialize(inputsPauseState, nextStatesPauseState, numChanges);
+
+    uint8_t inputsLoseState[] = {1<<1};
+    GameState* nextStatesLoseState[] = {mainMenu};
+    numChanges = 1;
+    (loseState)->Initialize(inputsLoseState, nextStatesLoseState, numChanges);
+
+    uint8_t inputsWinState[] = {1<<1};
+    GameState* nextStatesWinState[] = {mainMenu};
+    numChanges = 1;
+    (winState)->Initialize(inputsWinState, nextStatesWinState, numChanges);
+}
 
 void PLL_Init(void){ // set phase lock loop (PLL)
   // Clock_Init40MHz(); // run this line for 40MHz
@@ -163,6 +216,7 @@ void langRun() {
 
 void mainMenuRun() {
     ST7735_FillScreen(ST7735_BLACK);
+    LED_Clear();
 
     Spaceship ship1(100, 50, true);
     Spaceship ship2(85, 20, false);
@@ -233,7 +287,6 @@ void mainMenuRun() {
 }
 
 void chooseCharacterRun() {
-    comms.Out(0xF5);
     playerShip.hp = 0;
     opponentShip.hp = 0;
 
@@ -309,12 +362,7 @@ void gamePlayAnimation() {
 
     Clock_Delay(80000000);
 
-    if (ANIRUDDH_SCREEN) {
-        ST7735_FillScreen(ST7735_BLACK);
-    }
-    else {
-        ST7735_FillScreen(~ST7735_BLACK);
-    }
+    ST7735_FillScreen(ST7735_BLACK);
 
     ST7735_SetCursor(12, 4);
     ST7735_OutString((char *) "3", 5, ST7735_ORANGE);
@@ -341,101 +389,20 @@ void gamePlayAnimation() {
         opponentShip.setOrientation(20, 30, 60);
     }
 
+    opponentShip.setComms(comms);
+    comms.resetHp();
+}
 
+void gameStartRun() {
     while (currentGameState->stage == 3) {}
-}
-
-void winRun() {
-    comms.Out(0xF6);
-    if (ANIRUDDH_SCREEN) {
-      ST7735_FillScreen(ST7735_BLACK);
-    }
-    else {
-      ST7735_FillScreen(~ST7735_BLACK);
-    }
-
-    if (lang == 1) {
-        ST7735_SetCursor(3, 2);
-        ST7735_OutString((char *) "YOU WON", 3, ST7735_GREEN);
-        ST7735_SetCursor(5, 5);
-        ST7735_OutString((char*) "bit battle beast", 1, ST7735_GREEN);
-        ST7735_SetCursor(5, 8);
-        ST7735_OutString((char*) "PRESS ANY BUTTON", 1, ST7735_WHITE);
-        ST7735_SetCursor(7, 9);
-        ST7735_OutString((char*) "TO CONTINUE", 1, ST7735_WHITE);
-    }
-    if (!lang) {
-        ST7735_SetCursor(3, 2);
-        ST7735_OutString((char *) "GANASTE", 3, ST7735_GREEN);
-        ST7735_SetCursor(1, 5);
-        ST7735_OutString((char*) "peque\xA4""a bestia de batalla", 1, ST7735_GREEN);
-        ST7735_SetCursor(5, 8);
-        ST7735_OutString((char*) "PRESS ANY BUTTON", 1, ST7735_WHITE);
-        ST7735_SetCursor(7, 9);
-        ST7735_OutString((char*) "TO CONTINUE", 1, ST7735_WHITE);
-    }
-    while (currentGameState->stage == 5) {};
-}
-
-void loseRun() {
-    comms.Out(0xF7);
-    if (ANIRUDDH_SCREEN) {
-      ST7735_FillScreen(ST7735_BLACK);
-    }
-    else {
-      ST7735_FillScreen(~ST7735_BLACK);
-    }
-    if (lang == 1) {
-        ST7735_SetCursor(2, 2);
-        ST7735_OutString((char *) "YOU LOSE", 3, ST7735_RED);
-        ST7735_SetCursor(6, 5);
-        ST7735_OutString((char*) "take the L lol", 1, ST7735_RED);
-        ST7735_SetCursor(5, 8);
-        ST7735_OutString((char*) "PRESS ANY BUTTON", 1, ST7735_WHITE);
-        ST7735_SetCursor(7, 9);
-        ST7735_OutString((char*) "TO CONTINUE", 1, ST7735_WHITE);
-    }
-    if (!lang) {
-        ST7735_SetCursor(3, 2);
-        ST7735_OutString((char *) "T\xA3 PIERDES", 2, ST7735_RED);
-        ST7735_SetCursor(5, 4);
-        ST7735_OutString((char*) "toma la L jajaja", 1, ST7735_RED);
-        ST7735_SetCursor(2, 8);
-        ST7735_OutString((char*) "PRESIONE CUALQUIER BOT\xA2N", 1, ST7735_WHITE);
-        ST7735_SetCursor(7, 9);
-        ST7735_OutString((char*) "PARA CONTINUAR", 1, ST7735_WHITE);
-    }
-    while (currentGameState->stage == 6) {};
-}
-
-void pauseRun() {
-    int bufferHP = opponentShip.hp;
-    opponentShip.hp = 0;
-
-    if (lang == 1) {
-        ST7735_SetCursor(3, 4);
-        ST7735_OutString((char*) "GAME PAUSED", 2, ST7735_ORANGE);
-        ST7735_SetCursor(3, 8);
-        ST7735_OutString((char*) "PRESS SHOOT TO RESUME", 1, ST7735_WHITE);
-    }
-    if (!lang) {
-        ST7735_SetCursor(1, 4);
-        ST7735_OutString((char*) "JUEGO PAUSADO", 2, ST7735_ORANGE);
-        ST7735_SetCursor(4, 8);
-        ST7735_OutString((char*) "PULSE DISPARO PARA", 1, ST7735_WHITE);
-        ST7735_SetCursor(9, 9);
-        ST7735_OutString((char*) "REANUDAR", 1, ST7735_WHITE);
-    }
-    while (currentGameState->stage == 4) {}
-    opponentShip.hp = bufferHP;
-    comms.Out(0xF8);
+    gamePlayAnimation();
 }
 
 void gameEngineRun() {
     inputs.InitializePosition(); // TODO: Indicate this in the instruction menu
     ST7735_FillScreen(ST7735_BLACK);
 
-    while(currentGameState->stage == 3){
+    while(currentGameState->stage == 4){
         if (updating) continue;
         playerShip.drawShip();
         opponentShip.drawShip();
@@ -454,164 +421,251 @@ void gameEngineRun() {
     }
 }
 
+void pauseRun() {
+    if (lang == 1) {
+        ST7735_SetCursor(3, 4);
+        ST7735_OutString((char*) "GAME PAUSED", 2, ST7735_ORANGE);
+        ST7735_SetCursor(3, 8);
+        ST7735_OutString((char*) "PRESS SHOOT TO RESUME", 1, ST7735_WHITE);
+    }
+    if (!lang) {
+        ST7735_SetCursor(1, 4);
+        ST7735_OutString((char*) "JUEGO PAUSADO", 2, ST7735_ORANGE);
+        ST7735_SetCursor(4, 8);
+        ST7735_OutString((char*) "PULSE DISPARO PARA", 1, ST7735_WHITE);
+        ST7735_SetCursor(9, 9);
+        ST7735_OutString((char*) "REANUDAR", 1, ST7735_WHITE);
+    }
+    while (currentGameState->stage == 5) {}
+    comms.Out(0x89);
+}
+
+void winRun() {
+    ST7735_FillScreen(ST7735_BLACK);
+
+    if (lang == 1) {
+        ST7735_SetCursor(3, 2);
+        ST7735_OutString((char *) "YOU WON", 3, ST7735_GREEN);
+        ST7735_SetCursor(5, 5);
+        ST7735_OutString((char*) "bit battle beast", 1, ST7735_GREEN);
+        ST7735_SetCursor(8, 8);
+        ST7735_OutString((char*) "Score: ", 1, ST7735_WHITE);
+        ST7735_OutUDec(score);
+        ST7735_SetCursor(5, 9);
+        ST7735_OutString((char*) "PRESS ANY BUTTON", 1, ST7735_WHITE);
+        ST7735_SetCursor(7, 10);
+        ST7735_OutString((char*) "TO CONTINUE", 1, ST7735_WHITE);
+    }
+    if (!lang) {
+        ST7735_SetCursor(3, 2);
+        ST7735_OutString((char *) "GANASTE", 3, ST7735_GREEN);
+        ST7735_SetCursor(1, 5);
+        ST7735_OutString((char*) "peque\xA4""a bestia de batalla", 1, ST7735_GREEN);
+        ST7735_SetCursor(6, 8);
+        ST7735_OutString((char*) "Puntaje: ", 1, ST7735_WHITE);
+        ST7735_OutUDec(score);
+        ST7735_SetCursor(5, 9);
+        ST7735_OutString((char*) "PRESS ANY BUTTON", 1, ST7735_WHITE);
+        ST7735_SetCursor(7, 10);
+        ST7735_OutString((char*) "TO CONTINUE", 1, ST7735_WHITE);
+    }
+    while (currentGameState->stage == 6) {};
+}
+
+void loseRun() {
+    ST7735_FillScreen(ST7735_BLACK);
+
+    if (lang == 1) {
+        ST7735_SetCursor(2, 2);
+        ST7735_OutString((char *) "YOU LOSE", 3, ST7735_RED);
+        ST7735_SetCursor(6, 5);
+        ST7735_OutString((char*) "take the L lol", 1, ST7735_RED);
+        ST7735_SetCursor(8, 8);
+        ST7735_OutString((char*) "Score: ", 1, ST7735_WHITE);
+        ST7735_OutUDec(score);
+        ST7735_SetCursor(5, 9);
+        ST7735_OutString((char*) "PRESS ANY BUTTON", 1, ST7735_WHITE);
+        ST7735_SetCursor(7, 10);
+        ST7735_OutString((char*) "TO CONTINUE", 1, ST7735_WHITE);
+    }
+    if (!lang) {
+        ST7735_SetCursor(3, 2);
+        ST7735_OutString((char *) "T\xA3 PIERDES", 2, ST7735_RED);
+        ST7735_SetCursor(5, 4);
+        ST7735_OutString((char*) "toma la L jajaja", 1, ST7735_RED);
+        ST7735_SetCursor(6, 8);
+        ST7735_OutString((char*) "Puntaje: ", 1, ST7735_WHITE);
+        ST7735_OutUDec(score);
+        ST7735_SetCursor(2, 9);
+        ST7735_OutString((char*) "PRESIONE CUALQUIER BOT\xA2N", 1, ST7735_WHITE);
+        ST7735_SetCursor(7, 10);
+        ST7735_OutString((char*) "PARA CONTINUAR", 1, ST7735_WHITE);
+    }
+    while (currentGameState->stage == 7) {};
+}
+
+void characterSelectInterruptRoutine() {
+    comms.Out(0x8A);
+    if (!nextStateFlag) return;
+    if (Switch_Active(BUTTON_RIGHT)) {
+        playerShip.Initialize(false);
+        opponentShip.Initialize(true);
+        comms.Out(0x82);
+    }
+    else if (Switch_Active(BUTTON_LEFT)) {
+        playerShip.Initialize(true);
+        opponentShip.Initialize(false);
+        comms.Out(0x83);
+    }
+
+    int8_t opponentSelection = comms.getCharacterSelection();
+    if (opponentSelection == 1) {
+        opponentShip.Initialize(true);
+        playerShip.Initialize(false);
+    }
+    else if (opponentSelection == 0) {
+        opponentShip.Initialize(false);
+        playerShip.Initialize(true);
+    }
+}
+
+void gameEngineInterruptRoutine() {
+    if (!updating) return;
+
+    if (Switch_Active(BUTTON_DOWN)) {
+        comms.Out(0x88);
+        return;
+    }
+
+    bool sendPosition = false;
+
+//        uint32_t pot_d = inputs.PotVal();
+
+    static uint32_t rotCounter = 0;
+    rotCounter = (rotCounter + 1) % 2;
+
+    if (Switch_Active(BUTTON_RIGHT) && !rotCounter) {
+        playerShip.rotateShip(-1);
+        playerShip.sendOrientation(comms);
+    }
+    else if (Switch_Active(BUTTON_LEFT) && !rotCounter) {
+        playerShip.rotateShip(1);
+        playerShip.sendOrientation(comms);
+    }
+    else {
+        sendPosition = true;
+    }
+
+    for (int i = 0; i < numBullets; i++) {
+        bullets[i].stepBullet();
+    }
+
+    // Handle accelerometer player movements and send on UART
+    int8_t shiftX = 0;
+    int8_t shiftY = 0;
+    inputs.getShifts(shiftX, shiftY);
+    playerShip.moveShip(shiftX, shiftY);
+
+    // Handle opponent ship movement
+    opponentShip.setFromComms(comms);
+    playerShip.hp = comms.getSelfHp();
+
+    // Bullet Shooting
+    cleanBulletsArray();
+    static bool lastShoot = 0;
+    static uint32_t reloadTime = 0;
+    static uint8_t ammo = 3;
+
+    if (!ammo) {
+        reloadTime = (reloadTime + 1) % 120;
+        if (!reloadTime) ammo = 3;
+    }
+
+    if (Switch_Active(BUTTON_UP) && !lastShoot && numBullets < NUM_BULLETS) {
+        lastShoot = 1;
+        if (ammo) {
+            bullets[numBullets].initialize(playerShip.getCenterX(), playerShip.getCenterY(), playerShip.getDegrees(), playerShip.isMaster());
+            numBullets ++;
+            ammo --;
+            comms.Out(0x80);
+            sendPosition = false;
+        }
+        else {
+            // TODO Start empty sound
+        }
+    }
+    else if (!Switch_Active(BUTTON_UP)) lastShoot = 0;
+
+    // Handle opponent ship shooting
+    if (comms.getBullet() && numBullets < NUM_BULLETS) {
+        bullets[numBullets].initialize(opponentShip.getCenterX(), opponentShip.getCenterY(), opponentShip.getDegrees(), opponentShip.isMaster());
+        numBullets ++;
+    }
+
+    if (playerShip.checkBullets(bullets, numBullets) && playerShip.hp > 0) {
+        playerShip.hp -= 1;
+        comms.Out(playerShip.hp | 0x94);
+        sendPosition = false;
+    }
+    if (opponentShip.checkBullets(bullets, numBullets) && opponentShip.hp > 0) {
+        score ++;
+        opponentShip.hp -=1;
+        comms.Out(opponentShip.hp | 0x90);
+        sendPosition = false;
+    }
+
+    if (sendPosition) playerShip.sendPosition(comms);
+
+    updating = false;
+}
+
 // games  engine runs at 60Hz
 void TIMG12_IRQHandler(void){uint32_t pos,msg;
     if((TIMG12->CPU_INT.IIDX) == 1) {
         GPIOB->DOUTTGL31_0 = GREEN;
+
+        // Update Inputs
         inputs.In();
         Switch_In();
+
         GPIOB->DOUTTGL31_0 = GREEN;
 
+        // Checks for minimum time in FSM logic
         static int FSM_Counter = 0;
 
         FSM_Counter ++;
 
-        if (currentGameState->minInterrupts <= FSM_Counter) return;
+        if (currentGameState->minInterrupts >= FSM_Counter) return;
 
-        if (currentGameState->stage == 3) { // game engine
-            if (comms.getPause()) {
-                currentGameState = pauseState;
-            }
-            if (Switch_Active(BUTTON_DOWN)) {
-                comms.Out(0xF8);
-            }
-            if (comms.getLose()) {
-                currentGameState = winState;
-            }
-            if (comms.getWin()) {
-                currentGameState = loseState;
-            }
-        }
-
-        uint32_t FSM_Input = Switch_FSM_Val();
-        FSM_Input |= ((playerShip.hp != 0) << 2) | ((opponentShip.hp != 0) << 3);
+        // Transition to next FSM logic
+        uint32_t FSM_Input = Switch_FSM_Val() << 1;
+        nextStateFlag |= comms.getNextStateFlag();
+        FSM_Input |= nextStateFlag | ((lang != -1) << 2) | ((playerShip.hp != 0) << 5) | ((opponentShip.hp != 0) << 4);
 
         if (currentGameState != currentGameState->next[FSM_Input]) {
             FSM_Counter = 0;
             currentGameState = currentGameState->next[FSM_Input];
+            nextStateFlag = false;
             return;
         }
 
-        if (currentGameState->stage == 4) { // pause screen
-            if (Switch_Active(BUTTON_UP)) {
-                opponentShip.hp = 3;
-            }
-
-            if (comms.getPause()) {
-                currentGameState = gameEngine;
-            }
+        if (currentGameState->stage == 0) {
+            if (Switch_Active(BUTTON_LEFT)) lang = 1;
+            else if (Switch_Active(BUTTON_RIGHT)) lang = 0;
         }
 
-        if (currentGameState->stage == 7) { // language select screen
-            if (Switch_Active(BUTTON_RIGHT)) {
-                lang = 0;
-                opponentShip.hp = 3;
-            }
-            else if (Switch_Active(BUTTON_LEFT)) {
-                lang = 1;
-                opponentShip.hp = 3;
-            }
+        if (currentGameState->stage == 2) {
+            characterSelectInterruptRoutine();
         }
 
-        static bool othersHasLanded = false;
-
-        if (currentGameState->stage == 1) {
-            othersHasLanded |= comms.getReady();
-            if (!othersHasLanded) return;
-            if (Switch_Active(BUTTON_RIGHT)) {
-                playerShip.Initialize(false);
-                opponentShip.Initialize(true);
-                comms.Out(0xF3);
-                othersHasLanded = false;
-            }
-            else if (Switch_Active(BUTTON_LEFT)) {
-                playerShip.Initialize(true);
-                opponentShip.Initialize(false);
-                comms.Out(0xF4);
-                othersHasLanded = false;
-            }
-            int8_t opponentSelection = comms.getSelection();
-            if (opponentSelection == 1) {
-                opponentShip.Initialize(true);
-                playerShip.Initialize(false);
-                othersHasLanded = false;
-            }
-            else if (opponentSelection == 0) {
-                opponentShip.Initialize(false);
-                playerShip.Initialize(true);
-                othersHasLanded = false;
-            }
+        if (currentGameState->stage == 3) {
+            // Demo Screen
+            currentGameState = gameEngine;
         }
 
-        if (!updating || currentGameState->stage != 3) return;
-
-//        uint32_t pot_d = inputs.PotVal();
-
-        static uint32_t rotCounter = 0;
-        rotCounter = (rotCounter + 1) % 2;
-
-        if (Switch_Active(BUTTON_RIGHT) && !rotCounter) {
-            playerShip.rotateShip(-1);
-            comms.Out(0xF1);
+        if (currentGameState->stage == 4) {
+            gameEngineInterruptRoutine();
         }
-        else if (Switch_Active(BUTTON_LEFT) && !rotCounter) {
-            playerShip.rotateShip(1);
-            comms.Out(0xF2);
-        }
-
-        for (int i = 0; i < numBullets; i++) {
-            bullets[i].stepBullet();
-        }
-
-        // Handle accelerometer player movements and send on UART
-        int8_t shiftX;
-        int8_t shiftY;
-        inputs.getShifts(shiftX, shiftY);
-        playerShip.moveShip(shiftX, shiftY);
-        playerShip.sendPosition(comms);
-
-        // Bullet Shooting
-        cleanBulletsArray();
-        static bool lastShoot = 0;
-        static uint32_t reloadTime = 0;
-        static uint8_t ammo = 3;
-
-        if (Switch_Active(BUTTON_UP) && !lastShoot && numBullets < NUM_BULLETS) {
-            lastShoot = 1;
-            if (ammo) {
-                bullets[numBullets].initialize(playerShip.getCenterX(), playerShip.getCenterY(), playerShip.getDegrees(), playerShip.isMaster());
-                numBullets ++;
-                ammo --;
-                comms.Out(0x80);
-            }
-            else {
-                reloadTime = (reloadTime + 1) % 120;
-                // TODO Start empty sound
-                if (!reloadTime) ammo = 3;
-            }
-        }
-        else if (!Switch_Active(BUTTON_UP)) lastShoot = 0;
-
-        // Handle opponent ship movement
-        opponentShip.setFromComms(comms);
-        playerShip.hp = comms.getSelfHp();
-
-        // Handle opponent ship shooting
-        if (comms.getBullet() && numBullets < NUM_BULLETS) {
-            bullets[numBullets].initialize(opponentShip.getCenterX(), opponentShip.getCenterY(), opponentShip.getDegrees(), opponentShip.isMaster());
-            numBullets ++;
-        }
-
-        if (playerShip.checkBullets(bullets, numBullets) && playerShip.hp > 0) {
-            playerShip.hp -= 1;
-            comms.Out(playerShip.hp | 0x90);
-        }
-        if (opponentShip.checkBullets(bullets, numBullets) && opponentShip.hp > 0) {
-            opponentShip.hp -=1;
-            comms.Out(playerShip.hp | 0x90);
-        }
-
-        updating = false;
 
         GPIOB->DOUTTGL31_0 = GREEN;
     }
@@ -626,9 +680,11 @@ int main(void){ // final main
 //  ST7735_SetRotation(0);
   Switch_Init(); // initialize switches
   LED_Init();    // initialize LED
+  FSM_Initialize();
+  currentGameState = langState;
 //  Sound_Init();  // initialize sound
     // initialize interrupts on TimerG12 at 60 Hz
-//  TimerG12_IntArm(80000000/60, 2);
+  TimerG12_IntArm(80000000/60, 2);
   __enable_irq();
 
   while (1) {
@@ -638,7 +694,7 @@ int main(void){ // final main
 
     if (currentGameState->stage == 2) chooseCharacterRun();
 
-    if (currentGameState->stage == 3) gamePlayAnimation();
+    if (currentGameState->stage == 3) gameStartRun();
 
     if (currentGameState->stage == 4) gameEngineRun();
 

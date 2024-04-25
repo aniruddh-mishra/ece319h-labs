@@ -49,3 +49,7 @@ void LED_Toggle(uint32_t data){
     // Green LED: 2
     GPIOA->DOUTTGL31_0 = 1 << (24 + data);
 }
+
+void LED_Clear() {
+    LED_Array(0);
+}

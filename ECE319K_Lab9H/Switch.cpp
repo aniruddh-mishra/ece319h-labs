@@ -31,5 +31,5 @@ bool Switch_Active(uint8_t button) {
 
 uint32_t Switch_FSM_Val() {
     uint32_t any = (switchVal != 0);
-    return any | Switch_Active(2) << 1;
+    return any | Switch_Active(2) << 2;
 }

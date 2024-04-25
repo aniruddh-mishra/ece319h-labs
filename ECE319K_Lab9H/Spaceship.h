@@ -41,10 +41,12 @@ public:
     bool checkBullets(Bullet*, uint32_t);
     bool isMaster();
     void sendPosition(UART);
+    void sendOrientation(UART);
     uint32_t getCenterX();
     uint32_t getCenterY();
     int32_t getDegrees();
     void setFromComms(UART);
+    void setComms(UART&);
     void drawShip();
 };
 

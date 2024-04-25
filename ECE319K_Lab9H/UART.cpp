@@ -18,8 +18,8 @@ void UART2_Init() {
     UART2->CTL0 &= ~0x01; // disable UART2
     UART2->CTL0 = 0x00020018;
     // assumes an 80 MHz bus clock
-    UART2->IBRD = 800;//   divider = 800 + 0/64 = 800
-    UART2->FBRD = 0; // baud =2,500,000/800 = 3125
+    UART2->IBRD = 400;//   divider = 100 + 0/64 = 100
+    UART2->FBRD = 0; // baud =2,500,000/100 = 3125
     UART2->LCRH = 0x00000030;
     UART2->CPU_INT.IMASK = 1;
     // bit 11 TXINT
@@ -46,7 +46,7 @@ void UART1_Init() {
     UART1->CTL0 &= ~0x01; // disable UART0
     UART1->CTL0 = 0x00020018;
     // assumes an 80 MHz bus clock
-    UART1->IBRD = 800;//   divider = 800 + 0/64 = 800
+    UART1->IBRD = 400;//   divider = 800 + 0/64 = 800
     UART1->FBRD = 0; // baud =2,500,000/800 = 3125
     UART1->LCRH = 0x00000030;
     UART1->CTL0 |= 0x01; // enable UART1
@@ -55,144 +55,126 @@ void UART1_Init() {
 UART::UART() {
     UART1_Init();
     UART2_Init();
-    shiftXRead = 1;
-    shiftYRead = 1;
-    rotationRead = 1;
-    bulletRead = 1;
-    selectionRead = 1;
-    readyRead = 1;
-    winRead = 1;
-    loseRead = 1;
+
+    nextStateRead = true;
+    characterSelectionRead = true;
+    bulletRead = true;
+    otherHp = 3;
+    selfHp = 3;
 }
 
 void UART::Out(uint8_t data) {
+    while((UART1->STAT&0x40) != 0x40){};
+
     UART1->TXDATA = data;
 }
 
-void UART::putShiftX(int8_t shiftX) {
-    if (shiftXRead) this->shiftX = shiftX;
-    shiftXRead = 0;
+bool UART::getNextStateFlag() {
+    if (nextStateRead) return false;
+
+    nextStateRead = true;
+    return nextStateFlag;
 }
 
-void UART::putShiftY(int8_t shiftY) {
-    if (shiftYRead) this->shiftY = shiftY;
-    shiftYRead = 0;
-}
+int8_t UART::getCharacterSelection() {
+    if (characterSelectionRead) return -1;
 
-void UART::putRotation(int8_t rotation) {
-    if (rotationRead) this->rotation = rotation;
-    rotationRead = 0;
-}
-
-void UART::putBullet(bool newBullet) {
-    if (bulletRead) this->bullet = newBullet;
-    bulletRead = 0;
-}
-
-void UART::putSelection(bool master) {
-    if (selectionRead) this->selection = master;
-    selectionRead = 0;
-}
-
-void UART::putReady(bool ready) {
-    if (readyRead) this->ready = ready;
-    readyRead = 0;
-}
-
-void UART::putWin(bool win) {
-    if (winRead) this->win = win;
-    winRead = 0;
-}
-
-void UART::putLose(bool lose) {
-    if (loseRead) this->lose = lose;
-    loseRead = 0;
-}
-
-void UART::putPause(bool pause) {
-    if (pauseRead) this->pause = pause;
-    pauseRead = 0;
-}
-
-uint32_t UART::getYAxis() {
-    if (!shiftXRead) {
-        shiftXRead = 1;
-        return shiftX;
-    }
-    return 0;
-}
-
-uint32_t UART::getXAxis() {
-    if (!shiftYRead) {
-        shiftYRead = 1;
-        return shiftY;
-    }
-    return 0;
-}
-
-int32_t UART::getDegrees() {
-    if (!rotationRead) {
-        rotationRead = 1;
-        return rotation;
-    }
-    return 0;
-}
-
-uint8_t UART::getOtherHp() {
-    return 0;
-}
-
-uint8_t UART::getSelfHp() {
-    return 0;
+    characterSelectionRead = true;
+    return characterSelectionMaster;
 }
 
 bool UART::getBullet() {
-    if (!bulletRead) {
-        bulletRead = 1;
-        return bullet;
-    }
-    return 0;
+    if (bulletRead) return false;
+
+    bulletRead = true;
+    return true;
 }
 
-int8_t UART::getSelection() {
-    if (!selectionRead) {
-        selectionRead = 1;
-        if (selection) return 0;
-        return 1;
-    }
-    return -1;
+uint8_t UART::getSelfHp() {
+    return selfHp;
 }
 
-bool UART::getReady() {
-    if (!readyRead) {
-        readyRead = 1;
-        return this->ready;
-    }
-    return false;
+uint8_t UART::getOtherHp() {
+    return otherHp;
 }
 
-bool UART::getWin() {
-    if (!winRead) {
-        winRead = 1;
-        return this->win;
-    }
-    return false;
+uint32_t UART::getXAxis() {
+    return xAxis;
 }
 
-bool UART::getLose() {
-    if (!loseRead) {
-        loseRead = 1;
-        return this->lose;
-    }
-    return false;
+uint32_t UART::getYAxis() {
+    return yAxis;
 }
 
-bool UART::getPause() {
-    if (!pauseRead) {
-        pauseRead = 1;
-        return this->pause;
-    }
-    return false;
+uint32_t UART::getDegrees() {
+    return degrees;
+}
+
+void UART::putNextStateFlag(bool flag) {
+    if (!nextStateRead) return;
+
+    nextStateRead = false;
+    nextStateFlag = flag;
+}
+
+void UART::putCharacterSelection(bool master) {
+    if (!characterSelectionRead) return;
+
+    characterSelectionRead = false;
+    characterSelectionMaster = master;
+}
+
+void UART::putBullet() {
+    if (!bulletRead) return;
+
+    bulletRead = false;
+}
+
+void UART::putSelfHp(uint8_t newHp) {
+    selfHp = newHp;
+}
+
+void UART::putOtherHp(uint8_t newHp) {
+    otherHp = newHp;
+}
+
+void UART::putXAxis_1(uint8_t xAxis) {
+    updatingXAxis = 0 | (xAxis << 5);
+}
+
+void UART::putXAxis_2(uint8_t xAxis) {
+    updatingXAxis |= xAxis;
+    this->xAxis = updatingXAxis;
+}
+
+void UART::putYAxis_1(uint8_t yAxis) {
+    updatingYAxis = 0 | yAxis << 5;
+}
+
+void UART::putYAxis_2(uint8_t yAxis) {
+    updatingYAxis |= yAxis;
+    this->yAxis = updatingYAxis;
+}
+
+void UART::putDegrees(uint8_t degrees) {
+    this->degrees = degrees;
+}
+
+void UART::setXAxis(uint32_t xAxis) {
+    this->xAxis = xAxis;
+}
+
+void UART::setYAxis(uint32_t yAxis) {
+    this->yAxis = yAxis;
+}
+
+void UART::setDegrees(uint32_t degrees) {
+    this->degrees = degrees;
+}
+
+void UART::resetHp() {
+    otherHp = 3;
+    selfHp = 3;
 }
 
 extern "C" void UART2_IRQHandler(void);
@@ -207,46 +189,25 @@ void UART2_IRQHandler() {
 
     while (!((UART2->STAT / 4) % 2)) {
         uint8_t data = UART2->RXDATA;
-        if (data == 0xF1) {
-            comms.putRotation(-1);
-        }
-        else if (data == 0xF2) {
-            comms.putRotation(1);
-        }
-        else if (data == 0xF0) {
-            comms.putBullet(true);
-        }
-        else if (data == 0xF3) {
-            comms.putSelection(true);
-        }
-        else if (data == 0xF4) {
-            comms.putSelection(false);
-        }
-        else if (data == 0xF5) {
-            comms.putReady(true);
-        }
-        else if (data == 0xF6) {
-            comms.putWin(true);
-        }
-        else if (data == 0xF7) {
-            comms.putLose(true);
-        }
-        else if (data == 0xF8) {
-            comms.putPause(true);
-        }
-        else if ((data & (~0xF)) == 0xD0) {
-            data &= ~0xF0;
-            if (data & (~0x7)) {
-                data |= 0xF0;
+
+        if (!(data & (~0x1F))) comms.putXAxis_1(data);
+        else if ((data & (~0x1F)) == 0x20) comms.putXAxis_2(data & (~0x20));
+        else if ((data & (~0x1F)) == 0x40) comms.putYAxis_1(data & (~0x40));
+        else if ((data & (~0x1F)) == 0x60) comms.putYAxis_2(data & (~0x60));
+        else if ((data & (~0x3F)) == 0xC0) comms.putDegrees(data & (~0xC0));
+        else if ((data & (~0x1F)) == 0x80) {
+            if ((data & (~0x7)) == 0x80) {
+                if (data == 0x80) comms.putBullet();
+                if ((data & (~0x1)) == 0x82) comms.putCharacterSelection(data & (~0x82));
             }
-            comms.putShiftX((int8_t) data);
-        }
-        else if ((data & (~0xF)) == 0xE0) {
-            data &= ~0xF0;
-            if (data & (~0x7)) {
-                data |= 0xF0;
+            else if ((data & (~0x7)) == 0x88) {
+                // Can add more flags but only using nextState flag
+                comms.putNextStateFlag(true);
             }
-            comms.putShiftY((int8_t) data);
+            else if ((data & (~0x7)) == 0x90) {
+                if ((data & (~0x3)) == 0x90) comms.putOtherHp(data & (~0x90));
+                else if ((data & (~0x3)) == 0x94) comms.putSelfHp(data & (~0x94));
+            }
         }
     }
 

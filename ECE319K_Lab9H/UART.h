@@ -17,56 +17,57 @@
 #define FIFOSIZE 32 // maximum storage of FIFO is FIFOSIZE - 1 elements
 
 class UART {
-    int8_t shiftX;
-    int8_t shiftY;
-    int8_t rotation;
-    bool bullet;
-    bool selection;
-    bool ready;
-    bool win;
-    bool lose;
-    bool pause;
+    bool nextStateFlag;
+    bool nextStateRead;
 
+    bool characterSelectionMaster;
+    bool characterSelectionRead;
 
-    bool shiftXRead;
-    bool shiftYRead;
-    bool rotationRead;
     bool bulletRead;
-    bool selectionRead;
-    bool readyRead;
-    bool winRead;
-    bool loseRead;
-    bool pauseRead;
+
+    uint8_t selfHp;
+
+    uint8_t otherHp;
+
+    uint32_t xAxis;
+    uint32_t updatingXAxis;
+
+    uint32_t yAxis;
+    uint32_t updatingYAxis;
+
+    uint32_t degrees;
 
 public:
     UART();
 
-    void Out(uint8_t);
-    void putShiftX(int8_t);
-    void putShiftY(int8_t);
-    void putRotation(int8_t);
-    void putBullet(bool);
-    void putSelection(bool);
-    void putReady(bool);
-    void putWin(bool);
-    void putLose(bool);
-    void putPause(bool);
-
-
-//    int8_t getShiftX();
-//    int8_t getShiftY();
-//    int8_t getRotation();
+    // Used by external client
+    bool getNextStateFlag();
+    int8_t getCharacterSelection();
+    bool getBullet();
+    uint8_t getSelfHp();
+    uint8_t getOtherHp();
     uint32_t getXAxis();
     uint32_t getYAxis();
-    int32_t getDegrees();
-    bool getBullet();
-    int8_t getSelection();
-    uint8_t getOtherHp();
-    uint8_t getSelfHp();
-    bool getReady();
-    bool getWin();
-    bool getLose();
-    bool getPause();
+    uint32_t getDegrees();
+
+    // Used by UART interrupt
+    void putNextStateFlag(bool);
+    void putCharacterSelection(bool);
+    void putBullet();
+    void putSelfHp(uint8_t);
+    void putOtherHp(uint8_t);
+    void putXAxis_1(uint8_t);
+    void putXAxis_2(uint8_t);
+    void putYAxis_1(uint8_t);
+    void putYAxis_2(uint8_t);
+    void putDegrees(uint8_t);
+
+    // Comms Interaction Functions
+    void Out(uint8_t);
+    void setXAxis(uint32_t);
+    void setYAxis(uint32_t);
+    void setDegrees(uint32_t);
+    void resetHp();
 };
 
 #endif /* UART_H_ */

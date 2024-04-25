@@ -210,21 +210,29 @@ bool Spaceship::checkBullets(Bullet* bullets, uint32_t numBullets) {
 }
 
 void Spaceship::sendPosition(UART comms) {
-    uint8_t x_axis_1 = currentPos[0] >> 4;
+    uint8_t x_axis_1 = currentPos[0] >> 5;
     uint8_t x_axis_2 = currentPos[0] & 0x1F;
-    uint8_t y_axis_1 = currentPos[1] >> 4;
+    uint8_t y_axis_1 = currentPos[1] >> 5;
     uint8_t y_axis_2 = currentPos[1] & 0x1F;
 
-    comms.Out(x_axis_1 & (~14));
-    comms.Out(x_axis_2 & (~14) | 0x20);
-    comms.Out(y_axis_1 & (~14) | 0x40);
-    comms.Out(y_axis_2 & (~14) | 0x60);
-    comms.Out((uint8_t) (degrees / 10) | 0xC0);
+    comms.Out(x_axis_1 & (~0xE0));
+    comms.Out(x_axis_2 & (~0xE0) | 0x20);
+    comms.Out(y_axis_1 & (~0xE0) | 0x40);
+    comms.Out(y_axis_2 & (~0xE0) | 0x60);
+}
+
+void Spaceship::sendOrientation(UART comms) {
+    comms.Out(((uint8_t) (degrees / 10)) | 0xC0);
 }
 
 void Spaceship::setFromComms(UART comms) {
-    setOrientation(comms.getXAxis(), comms.getYAxis(), comms.getDegrees());
+    setOrientation(comms.getXAxis(), comms.getYAxis(), 10 * comms.getDegrees());
 
-    uint8_t selfHp = comms.getOtherHp();
-    hp = selfHp;
+    this->hp = comms.getOtherHp();
+}
+
+void Spaceship::setComms(UART& comms) {
+    comms.setXAxis(this->currentPos[0]);
+    comms.setYAxis(this->currentPos[1]);
+    comms.setDegrees(this->degrees / 10);
 }

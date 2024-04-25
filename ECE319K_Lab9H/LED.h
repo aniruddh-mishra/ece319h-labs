@@ -13,6 +13,8 @@ void LED_Init(void);
 
 void LED_Array(uint32_t);
 
+void LED_Clear();
+
 // data specifies which LED to turn on
 void LED_On(uint32_t data);
 
