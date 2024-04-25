@@ -53,11 +53,16 @@ public:
     void putPause(bool);
 
 
-    int8_t getShiftX();
-    int8_t getShiftY();
-    int8_t getRotation();
+//    int8_t getShiftX();
+//    int8_t getShiftY();
+//    int8_t getRotation();
+    uint32_t getXAxis();
+    uint32_t getYAxis();
+    int32_t getDegrees();
     bool getBullet();
     int8_t getSelection();
+    uint8_t getOtherHp();
+    uint8_t getSelfHp();
     bool getReady();
     bool getWin();
     bool getLose();

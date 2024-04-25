@@ -114,7 +114,7 @@ void UART::putPause(bool pause) {
     pauseRead = 0;
 }
 
-int8_t UART::getShiftX() {
+uint32_t UART::getYAxis() {
     if (!shiftXRead) {
         shiftXRead = 1;
         return shiftX;
@@ -122,7 +122,7 @@ int8_t UART::getShiftX() {
     return 0;
 }
 
-int8_t UART::getShiftY() {
+uint32_t UART::getXAxis() {
     if (!shiftYRead) {
         shiftYRead = 1;
         return shiftY;
@@ -130,11 +130,19 @@ int8_t UART::getShiftY() {
     return 0;
 }
 
-int8_t UART::getRotation() {
+int32_t UART::getDegrees() {
     if (!rotationRead) {
         rotationRead = 1;
         return rotation;
     }
+    return 0;
+}
+
+uint8_t UART::getOtherHp() {
+    return 0;
+}
+
+uint8_t UART::getSelfHp() {
     return 0;
 }
 

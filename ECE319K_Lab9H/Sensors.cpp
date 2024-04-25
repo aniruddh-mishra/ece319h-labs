@@ -142,7 +142,33 @@ uint32_t Sensors::PotVal() {
     return pot_d;
 }
 
-void Sensors::Orientation(int32_t& x_axis, int32_t& y_axis) {
-    x_axis = this->x_axis - this->x_base;
-    y_axis = this->y_axis - this->y_base;
+int32_t minInt(int32_t a, int32_t b) {
+    if (a > b) return b;
+    return a;
+}
+
+
+void Sensors::getShifts(int8_t& shiftX, int8_t& shiftY) {
+    int32_t x_offset = x_axis - x_base;
+    int32_t y_offset = y_axis - y_base;
+
+    if (x_offset > 0) {
+        shiftX = minInt(x_offset, 4);
+    }
+    else if (x_offset < -1) {
+        shiftX = -1 * minInt(-1*x_offset, 4);
+    }
+
+    if (y_offset > 50) {
+        shiftY = minInt(y_axis / 50, 4);
+        if (x_offset < 0) {
+            shiftX = -1 * minInt(-1*x_offset, 4);
+        }
+    }
+    else if (y_offset < -50) {
+        shiftY = -1 * minInt(-1 * y_offset / 50, 4);
+        if (x_offset < 0) {
+            shiftX = minInt(x_offset, 4);
+        }
+    }
 }

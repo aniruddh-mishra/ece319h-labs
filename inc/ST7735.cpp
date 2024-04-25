@@ -836,7 +836,8 @@ void ST7735_DrawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) {
 // Input: color 16-bit color, which can be produced by ST7735_Color565()
 // Output: none
 void ST7735_FillScreen(uint16_t color) {
-  ST7735_FillRect(0, 0, _width, _height, color);  // original
+    if (!ANIRUDDH_SCREEN) color = ~color;
+    ST7735_FillRect(0, 0, _width, _height, color);  // original
 //  screen is actually 129 by 161 pixels, x 0 to 128, y goes from 0 to 160
 }
 

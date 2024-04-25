@@ -25,7 +25,7 @@ public:
     void InitializePosition();
     void In();
     uint32_t PotVal();
-    void Orientation(int32_t&, int32_t&);
+    void getShifts(int8_t&, int8_t&);
 };
 
 #endif /* SENSORS_H_ */

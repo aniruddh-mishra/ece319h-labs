@@ -78,31 +78,6 @@ void Spaceship::moveShip(int8_t x_inc, int8_t y_inc) {
     else this->currentPos[1] = newY;
 }
 
-void Spaceship::rotateMap(int32_t cos, int32_t sine) {
-    uint16_t newBitMap[289];
-
-    for (int i = 0; i < 289; i++) {
-        newBitMap[i] = 0;
-    }
-
-    for (int32_t x = 0; x < 11; x++) {
-        for (int32_t y = 0; y < 11; y++) {
-            int32_t coord[2] = {x - 5, 5 - y};
-            int32_t newX = coord[0] * cos / trigDivisor - coord[1] * sine / trigDivisor;
-            int32_t newY = coord[0] * sine / trigDivisor + coord[1] * cos / trigDivisor;
-
-            newBitMap[(newX + 8) * 17 + (newY + 8)] = baseImage[x*11 + y];
-        }
-    }
-
-    height = maxHeight;
-    width = maxWidth;
-
-    for (int i = 0; i < 289; i++) {
-        bitMap[i] = newBitMap[i];
-    }
-}
-
 void Spaceship::rotateQuarters(uint32_t numQuarters) {
     uint16_t newBitMap[height * width];
 
@@ -165,20 +140,16 @@ void Spaceship::rotateShip(int8_t rotation) {
     rotateQuarters(degrees / 90);
 }
 
-uint32_t Spaceship::getX() {
-    return currentPos[0];
-}
-
-uint32_t Spaceship::getY() {
-    return currentPos[1];
-}
-
 uint32_t Spaceship::getCenterX() {
     return currentPos[0] + width / 2;
 }
 
 uint32_t Spaceship::getCenterY() {
     return currentPos[1] + height / 2;
+}
+
+int32_t Spaceship::getDegrees() {
+    return degrees;
 }
 
 static uint16_t blackBox[289];
@@ -236,4 +207,24 @@ bool Spaceship::checkBullets(Bullet* bullets, uint32_t numBullets) {
     }
 
     return false;
+}
+
+void Spaceship::sendPosition(UART comms) {
+    uint8_t x_axis_1 = currentPos[0] >> 4;
+    uint8_t x_axis_2 = currentPos[0] & 0x1F;
+    uint8_t y_axis_1 = currentPos[1] >> 4;
+    uint8_t y_axis_2 = currentPos[1] & 0x1F;
+
+    comms.Out(x_axis_1 & (~14));
+    comms.Out(x_axis_2 & (~14) | 0x20);
+    comms.Out(y_axis_1 & (~14) | 0x40);
+    comms.Out(y_axis_2 & (~14) | 0x60);
+    comms.Out((uint8_t) (degrees / 10) | 0xC0);
+}
+
+void Spaceship::setFromComms(UART comms) {
+    setOrientation(comms.getXAxis(), comms.getYAxis(), comms.getDegrees());
+
+    uint8_t selfHp = comms.getOtherHp();
+    hp = selfHp;
 }
