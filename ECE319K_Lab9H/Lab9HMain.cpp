@@ -556,7 +556,7 @@ void langInterruptRoutine() {
         ST7735_SetCursor(0,1);
         ST7735_OutString((char*) " Hace mucho tiempo,\n las dos naciones,\n Megaplaneta y Gigaland,\n viv\xA1""an en armon\xA1""a.", 1, ST7735_WHITE);
         ST7735_SetCursor(0, 10);
-        ST7735_OutString((char*) " PRESIONE CUALQUIER BOT\xA2N", 1, ST7735_WHITE);
+        ST7735_OutString((char*) "  PRESIONE CUALQUIER BOT\xA2N", 1, ST7735_WHITE);
         ST7735_SetCursor(0, 11);
         ST7735_OutString((char*) "        CONTINUAR", 1, ST7735_WHITE);
         Switch_In();
@@ -569,9 +569,9 @@ void langInterruptRoutine() {
         }
         ST7735_FillScreen(ST7735_BLACK);
         ST7735_SetCursor(0,1);
-        ST7735_OutString((char*) " Entonces todo cambi\xA2,\n cuando Gigaland atac\xA2", 1, ST7735_WHITE);
+        ST7735_OutString((char*) " Entonces todo cambi\xA2,\n cuando Gigaland atac\xA2.", 1, ST7735_WHITE);
         ST7735_SetCursor(0, 10);
-        ST7735_OutString((char*) " PRESIONE CUALQUIER BOT\xA2N", 1, ST7735_WHITE);
+        ST7735_OutString((char*) "  PRESIONE CUALQUIER BOT\xA2N", 1, ST7735_WHITE);
         ST7735_SetCursor(0, 11);
         ST7735_OutString((char*) "        CONTINUAR", 1, ST7735_WHITE);
         Switch_In();
