@@ -1,7 +1,7 @@
 // Sound.h
 // Runs on MSPM0
 // Play sounds on 5-bit DAC.
-// Aniruddh Mishra
+// Your name
 // 11/5/2023
 #ifndef SOUND_H
 #define SOUND_H
