@@ -214,7 +214,8 @@ void UART::processFIFO() {
             else if ((data & (~0x7)) == 0x88) {
                 if (data == 0x88) putNextStateFlag(currentGameState->stage != 5);
                 if (data == 0x89) putNextStateFlag(currentGameState->stage == 5);
-                else putNextStateFlag(true);
+                if (data == 0x8B) putNextStateFlag(currentGameState->stage != 4);
+                if (data == 0x8A) putNextStateFlag(currentGameState->stage != 3);
             }
             else if ((data & (~0x7)) == 0x90) {
                 if ((data & (~0x3)) == 0x90) putSelfHp(data & (~0x90));

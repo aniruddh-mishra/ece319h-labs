@@ -370,12 +370,13 @@ void gameStartRun() {
 
         updating = true;
     }
-    comms.Out(0x8A);
+    comms.Out(0x8B);
     gamePlayAnimation();
 }
 
 void gameEngineRun() {
     numBullets = 0;
+
     if (playerShip.isMaster()) {
         playerShip.setOrientation(20, 30, 60);
         opponentShip.setOrientation(90, 120, 240);
@@ -499,7 +500,7 @@ void loseRun() {
 
 void characterSelectInterruptRoutine() {
     comms.Out(0x8A);
-//    if (!nextStateFlag) return;
+    if (!nextStateFlag) return;
     if (Switch_Active(BUTTON_RIGHT)) {
         playerShip.Initialize(false);
         opponentShip.Initialize(true);
@@ -693,6 +694,9 @@ void TIMG12_IRQHandler(void){uint32_t pos,msg;
         FSM_Input |= nextStateFlag | ((lang != -1) << 2) | ((playerShip.hp != 0) << 5) | ((opponentShip.hp != 0) << 4);
 
         if (currentGameState != currentGameState->next[FSM_Input]) {
+            if (currentGameState->stage == 6 || currentGameState->stage == 7) {
+                int x = 1 + 1;
+            }
             FSM_Counter = 0;
             updating = false;
             ammo = 3;
