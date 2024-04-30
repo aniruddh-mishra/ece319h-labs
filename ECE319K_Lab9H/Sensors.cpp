@@ -7,6 +7,7 @@
 #include <ti/devices/msp/msp.h>
 #include "../inc/Clock.h"
 #include "Sensors.h"
+#include "../inc/ST7735.h"
 #define ADCVREF_VDDA 0x000
 #define ADCVREF_INT  0x200
 
@@ -171,4 +172,6 @@ void Sensors::getShifts(int8_t& shiftX, int8_t& shiftY) {
             shiftX = minInt(x_offset, 4);
         }
     }
+
+    if (ANIRUDDH_SCREEN) shiftX *= 3/2;
 }
