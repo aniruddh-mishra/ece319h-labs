@@ -1,0 +1,13 @@
+*
+!.gitignore
+!ECE319K_Lab*/
+ECE319K_Lab2/
+ECE319K_Lab7/
+ECE319K_Lab8/
+ECE319K_Lab9/
+ECE319K_Lab*/*
+!ECE319K_Lab*/*.c
+!ECE319K_Lab*/*.cpp
+!ECE319K_Lab*/*.s
+!ECE319K_Lab*/*.h
+!inc/
