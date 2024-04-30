@@ -556,7 +556,7 @@ void langInterruptRoutine() {
 
 void characterSelectInterruptRoutine() {
     comms.Out(0x8A);
-//    if (!nextStateFlag) return;
+    if (!nextStateFlag) return;
     if (Switch_Active(BUTTON_RIGHT)) {
         playerShip.Initialize(false);
         opponentShip.Initialize(true);
