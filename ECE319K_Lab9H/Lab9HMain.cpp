@@ -351,6 +351,8 @@ void gamePlayAnimation() {
     ST7735_SetCursor(12, 4);
     ST7735_OutString((char *) "1", 5, ST7735_ORANGE);
     LED_On(GREEN_LED);
+
+    comms.reset();
 }
 
 void gameStartRun() {
@@ -366,9 +368,7 @@ void gameStartRun() {
     if (!lang) {
         ST7735_OutString((char *) "\xAD""Descubre tus controles!\n -dispositivo de\n  inclinaci\xA2n mueve barco\n -bot\xA2n superior dispara\n -bot\xA2n izquierdo gira\n  izquierda\n -bot\xA2n derecho gira\n  derecha\n -bot\xA2n At\xA0s pausa", 1, ST7735_WHITE);
     }
-
     Clock_Delay1ms(3000);
-
     ST7735_SetCursor(1, 1);
     if (lang == 1) {
         ST7735_OutString((char *) "Figure out your controls!\n -Tilting device moves ship\n -Top button shoots\n -Left button turns left\n -Right button turns right\n -Back button pauses", 1, ST7735_BLACK);
@@ -402,7 +402,7 @@ void gameStartRun() {
 
         updating = true;
     }
-    comms.Out(0x8A);
+    comms.Out(0x8B);
     gamePlayAnimation();
 }
 
