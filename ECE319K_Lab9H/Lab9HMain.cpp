@@ -352,7 +352,7 @@ void gamePlayAnimation() {
     ST7735_OutString((char *) "1", 5, ST7735_ORANGE);
     LED_On(GREEN_LED);
 
-    comms.reset();
+    Clock_Delay(80000000);
 }
 
 void gameStartRun() {

@@ -17,6 +17,10 @@ int8_t backgroundTrack = -1;
 const uint8_t* soundArray;
 uint32_t size;
 
+const uint8_t* buff[8];
+uint32_t size_buff[8];
+uint32_t numQue;
+
 void SysTick_IntArm(uint32_t period, uint32_t priority){
     SysTick->CTRL = 0x00;
     SysTick->LOAD = period - 1;
@@ -40,6 +44,13 @@ void SysTick_Handler(void){ // called at 11 kHz
     DAC5_Out(soundArray[index] >> shifter);
     index = (index + 1) % size;
     if (index == 0) {
+        if (soundArray == buff[0] && numQue > 0) {
+            numQue -= 1;
+            for (int i = 0; i < numQue; i++) {
+                buff[i] = buff[i + 1];
+                size_buff[i] = size_buff[i + 1];
+            }
+        }
         Background_Song_Set(backgroundTrack);
     }
 }
@@ -55,31 +66,50 @@ void Sound_Stop() {
 }
 
 void Background_Song_Set(int8_t track) {
-    backgroundTrack = track;
-    switch(track) {
-        case 0:
-            soundArray = gameMusic;
-            size = gameMusic_Size;
-            break;
-        // case 1:
-        //     soundArray = menuLoop;
-        //     size = menuLoop_Size;
-        //     break;
-        default:
-            Sound_Stop();
-            break;
+    if (numQue > 0) {
+        soundArray = buff[0];
+        size = size_buff[0];
     }
-
+    else {
+        backgroundTrack = track;
+        switch(track) {
+            case 0:
+                soundArray = gameMusic;
+                size = gameMusic_Size;
+                break;
+            // case 1:
+            //     soundArray = menuLoop;
+            //     size = menuLoop_Size;
+            //     break;
+            default:
+                Sound_Stop();
+                break;
+        }
+    }
     if (!SysTick->LOAD) Sound_Start(7111);
 }
 
 void Sound_Shoot(void){
-    soundArray = shoot;
-    size = shoot_Size;
-    Sound_Start(7111);
+    if (soundArray != gameMusic) {
+        if (numQue >= 8) return;
+        buff[numQue] = shoot;
+        size_buff[numQue] = shoot_Size;
+        numQue ++;
+    }
+    else {
+        soundArray = shoot;
+        size = shoot_Size;
+        Sound_Start(7111);
+    }
 }
 
 void Sound_Empty(void){
+    if (soundArray != gameMusic) {
+        if (numQue >= 8) return;
+        buff[numQue] = empty;
+        size_buff[numQue] = empty_Size;
+        numQue ++;
+    }
     soundArray = empty;
     size = empty_Size;
     Sound_Start(7111);
