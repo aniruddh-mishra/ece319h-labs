@@ -586,7 +586,7 @@ void demoInterruptRoutine() {
             Sound_Shoot();
         }
         else {
-            // TODO Start empty sound
+            Sound_Empty();
         }
     }
     else if (!Switch_Active(BUTTON_UP)) lastShoot = 0;
@@ -656,7 +656,7 @@ void gameEngineInterruptRoutine() {
             sendPosition = false;
         }
         else {
-            // TODO Start empty sound
+            Sound_Empty();
         }
     }
     else if (!Switch_Active(BUTTON_UP)) lastShoot = 0;
