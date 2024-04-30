@@ -80,7 +80,7 @@ void Sound_Shoot(void){
 }
 
 void Sound_Empty(void){
-    soundArray = empty;
-    size = empty_Size;
+//    soundArray = empty;
+//    size = empty_Size;
     Sound_Start(7111);
 }

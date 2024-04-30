@@ -351,18 +351,6 @@ void gamePlayAnimation() {
     ST7735_SetCursor(12, 4);
     ST7735_OutString((char *) "1", 5, ST7735_ORANGE);
     LED_On(GREEN_LED);
-
-    if (playerShip.isMaster()) {
-        playerShip.setOrientation(20, 30, 60);
-        opponentShip.setOrientation(90, 120, 240);
-    }
-    else {
-        playerShip.setOrientation(90, 120, 240);
-        opponentShip.setOrientation(20, 30, 60);
-    }
-
-    opponentShip.setComms(comms);
-    comms.reset();
 }
 
 void gameStartRun() {
@@ -370,6 +358,7 @@ void gameStartRun() {
     ST7735_FillScreen(ST7735_BLACK);
     demo.Initialize(playerShip.isMaster());
     demo.setOrientation(60, 75, 0);
+
     ST7735_SetCursor(1, 1);
     if (lang == 1) {
         ST7735_OutString((char *) "Figure out your controls!\n -Tilting device moves ship\n -Top button shoots\n -Left button turns left\n -Right button turns right\n -Back button pauses", 1, ST7735_WHITE);
@@ -377,7 +366,9 @@ void gameStartRun() {
     if (!lang) {
         ST7735_OutString((char *) "\xAD""Descubre tus controles!\n -dispositivo de\n  inclinaci\xA2n mueve barco\n -bot\xA2n superior dispara\n -bot\xA2n izquierdo gira\n  izquierda\n -bot\xA2n derecho gira\n  derecha\n -bot\xA2n At\xA0s pausa", 1, ST7735_WHITE);
     }
-    Clock_Delay1ms(500);
+
+    Clock_Delay1ms(3000);
+
     ST7735_SetCursor(1, 1);
     if (lang == 1) {
         ST7735_OutString((char *) "Figure out your controls!\n -Tilting device moves ship\n -Top button shoots\n -Left button turns left\n -Right button turns right\n -Back button pauses", 1, ST7735_BLACK);
@@ -389,6 +380,18 @@ void gameStartRun() {
         ST7735_SetCursor(3, 11);
         ST7735_OutString((char *) "CUANDO LISTO PRESIONE\n      EL BOT\xA2N ATR\xA0S", 1, ST7735_WHITE);
     }
+
+    if (playerShip.isMaster()) {
+        playerShip.setOrientation(20, 30, 60);
+        opponentShip.setOrientation(90, 120, 240);
+    }
+    else {
+        playerShip.setOrientation(90, 120, 240);
+        opponentShip.setOrientation(20, 30, 60);
+    }
+    opponentShip.setComms(comms);
+    comms.reset();
+
     while (currentGameState->stage == 3) {
         if (updating) continue;
         demo.drawShip();
@@ -712,9 +715,6 @@ void TIMG12_IRQHandler(void){uint32_t pos,msg;
         FSM_Input |= nextStateFlag | ((lang != -1) << 2) | ((playerShip.hp != 0) << 5) | ((opponentShip.hp != 0) << 4);
 
         if (currentGameState != currentGameState->next[FSM_Input]) {
-            if (currentGameState->stage == 6 || currentGameState->stage == 7) {
-                int x = 1 + 1;
-            }
             FSM_Counter = 0;
             updating = false;
             ammo = 3;
