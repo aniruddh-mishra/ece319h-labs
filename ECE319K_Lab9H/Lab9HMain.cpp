@@ -352,16 +352,6 @@ void gamePlayAnimation() {
     ST7735_OutString((char *) "1", 5, ST7735_ORANGE);
     LED_On(GREEN_LED);
 
-    if (playerShip.isMaster()) {
-        playerShip.setOrientation(20, 30, 60);
-        opponentShip.setOrientation(90, 120, 240);
-    }
-    else {
-        playerShip.setOrientation(90, 120, 240);
-        opponentShip.setOrientation(20, 30, 60);
-    }
-
-    opponentShip.setComms(comms);
     comms.reset();
 }
 
@@ -389,16 +379,6 @@ void gameStartRun() {
         ST7735_SetCursor(3, 11);
         ST7735_OutString((char *) "CUANDO LISTO PRESIONE\n      EL BOT\xA2N ATR\xA0S", 1, ST7735_WHITE);
     }
-    if (playerShip.isMaster()) {
-        playerShip.setOrientation(20, 30, 60);
-        opponentShip.setOrientation(90, 120, 240);
-    }
-    else {
-        playerShip.setOrientation(90, 120, 240);
-        opponentShip.setOrientation(20, 30, 60);
-    }
-    comms.reset();
-    opponentShip.setComms(comms);
     while (currentGameState->stage == 3) {
         if (updating) continue;
         demo.drawShip();
@@ -415,6 +395,17 @@ void gameStartRun() {
 
 void gameEngineRun() {
     numBullets = 0;
+
+    if (playerShip.isMaster()) {
+        playerShip.setOrientation(20, 30, 60);
+        opponentShip.setOrientation(90, 120, 240);
+    }
+    else {
+        playerShip.setOrientation(90, 120, 240);
+        opponentShip.setOrientation(20, 30, 60);
+    }
+
+    opponentShip.setComms(comms);
 
     inputs.InitializePosition(); // TODO: Indicate this in the instruction menu
     ST7735_FillScreen(ST7735_BLACK);
