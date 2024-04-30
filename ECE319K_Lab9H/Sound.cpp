@@ -78,3 +78,9 @@ void Sound_Shoot(void){
     size = shoot_Size;
     Sound_Start(7111);
 }
+
+void Sound_Empty(void){
+    soundArray = empty;
+    size = empty_Size;
+    Sound_Start(7111);
+}
