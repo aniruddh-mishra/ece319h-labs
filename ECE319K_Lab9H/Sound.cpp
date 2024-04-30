@@ -63,12 +63,14 @@ void Sound_Start(uint32_t period){
 void Sound_Stop() {
     SysTick->LOAD = 0;
     SysTick->VAL = 0;
+    numQue = 0;
 }
 
 void Background_Song_Set(int8_t track) {
     if (numQue > 0) {
         soundArray = buff[0];
         size = size_buff[0];
+        Sound_Start(7111);
     }
     else {
         backgroundTrack = track;
@@ -85,8 +87,8 @@ void Background_Song_Set(int8_t track) {
                 Sound_Stop();
                 break;
         }
+        if (!SysTick->LOAD) Sound_Start(7111);
     }
-    if (!SysTick->LOAD) Sound_Start(7111);
 }
 
 void Sound_Shoot(void){
@@ -110,19 +112,37 @@ void Sound_Empty(void){
         size_buff[numQue] = empty_Size;
         numQue ++;
     }
-    soundArray = empty;
-    size = empty_Size;
-    Sound_Start(7111);
+    else {
+        soundArray = empty;
+        size = empty_Size;
+        Sound_Start(7111);
+    }
 }
 
 void Sound_EnemyHit(void){
-    soundArray = enemyHit;
-    size = enemyHit_Size;
-    Sound_Start(7111);
+    if (soundArray != gameMusic) {
+        if (numQue >= 8) return;
+        buff[numQue] = enemyHit;
+        size_buff[numQue] = enemyHit_Size;
+        numQue ++;
+    }
+    else {
+        soundArray = enemyHit;
+        size = enemyHit_Size;
+        Sound_Start(7111);
+    }
 }
 
 void Sound_Explosion(void){
-    soundArray = explosion;
-    size = explosion_Size;
-    Sound_Start(7111);
+    if (soundArray != gameMusic) {
+        if (numQue >= 8) return;
+        buff[numQue] = explosion;
+        size_buff[numQue] = explosion_Size;
+        numQue ++;
+    }
+    else {
+        soundArray = explosion;
+        size = explosion_Size;
+        Sound_Start(7111);
+    }
 }

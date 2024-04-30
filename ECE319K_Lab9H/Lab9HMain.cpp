@@ -455,7 +455,6 @@ void pauseRun() {
 
 void winRun() {
     Sound_Stop();
-    Sound_Explosion();
     ST7735_FillScreen(ST7735_BLACK);
 
     if (lang == 1) {
@@ -489,7 +488,6 @@ void winRun() {
 
 void loseRun() {
     Sound_Stop();
-    Sound_Explosion();
     ST7735_FillScreen(ST7735_BLACK);
 
     if (lang == 1) {
@@ -681,9 +679,9 @@ void gameEngineInterruptRoutine() {
     lossHealth = opponentShip.checkBullets(bullets, numBullets);
     if (lossHealth && opponentShip.hp > 0) {
         opponentShip.hp -= lossHealth;
+        Sound_EnemyHit();
         if (!opponentShip.hp) {
             comms.Out(opponentShip.hp | 0x90);
-            Sound_EnemyHit();
             sendPosition = false;
         }
     }
