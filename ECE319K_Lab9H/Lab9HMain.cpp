@@ -552,6 +552,37 @@ void langInterruptRoutine() {
             Switch_In();
         }
     }
+    if (!lang) {
+        ST7735_SetCursor(0,1);
+        ST7735_OutString((char*) " Hace mucho tiempo,\n las dos naciones,\n Megaplaneta y Gigaland,\n viv\xA1""an en armon\xA1""a.", 1, ST7735_WHITE);
+        ST7735_SetCursor(0, 10);
+        ST7735_OutString((char*) " PRESIONE CUALQUIER BOT\xA2N", 1, ST7735_WHITE);
+        ST7735_SetCursor(0, 11);
+        ST7735_OutString((char*) "        CONTINUAR", 1, ST7735_WHITE);
+        Switch_In();
+        Clock_Delay1ms(200);
+        while (Switch_Active(BUTTON_UP) || Switch_Active(BUTTON_DOWN) || Switch_Active(BUTTON_LEFT) || Switch_Active(BUTTON_RIGHT)){
+            Switch_In();
+        }
+        while (!Switch_Active(BUTTON_UP) && !Switch_Active(BUTTON_DOWN) && !Switch_Active(BUTTON_LEFT) && !Switch_Active(BUTTON_RIGHT)){
+            Switch_In();
+        }
+        ST7735_FillScreen(ST7735_BLACK);
+        ST7735_SetCursor(0,1);
+        ST7735_OutString((char*) " Entonces todo cambi\xA2,\n cuando Gigaland atac\xA2", 1, ST7735_WHITE);
+        ST7735_SetCursor(0, 10);
+        ST7735_OutString((char*) " PRESIONE CUALQUIER BOT\xA2N", 1, ST7735_WHITE);
+        ST7735_SetCursor(0, 11);
+        ST7735_OutString((char*) "        CONTINUAR", 1, ST7735_WHITE);
+        Switch_In();
+        Clock_Delay1ms(200);
+        while (Switch_Active(BUTTON_UP) || Switch_Active(BUTTON_DOWN) || Switch_Active(BUTTON_LEFT) || Switch_Active(BUTTON_RIGHT)){
+            Switch_In();
+        }
+        while (!Switch_Active(BUTTON_UP) && !Switch_Active(BUTTON_DOWN) && !Switch_Active(BUTTON_LEFT) && !Switch_Active(BUTTON_RIGHT)) {
+            Switch_In();
+        }
+    }
 }
 
 void characterSelectInterruptRoutine() {
