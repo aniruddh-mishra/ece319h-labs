@@ -519,6 +519,41 @@ void loseRun() {
     while (currentGameState->stage == 7) {};
 }
 
+void langInterruptRoutine() {
+    ST7735_FillScreen(ST7735_BLACK);
+    if (lang == 1) {
+        ST7735_SetCursor(0,1);
+        ST7735_OutString((char*) " Long ago, the two nations,\n Megaplanet and Gigaland,\n lived in harmony.", 1, ST7735_WHITE);
+        ST7735_SetCursor(0, 10);
+        ST7735_OutString((char*) "     PRESS ANY BUTTON", 1, ST7735_WHITE);
+        ST7735_SetCursor(0, 11);
+        ST7735_OutString((char*) "       TO CONTINUE", 1, ST7735_WHITE);
+        Switch_In();
+        Clock_Delay1ms(200);
+        while (Switch_Active(BUTTON_UP) || Switch_Active(BUTTON_DOWN) || Switch_Active(BUTTON_LEFT) || Switch_Active(BUTTON_RIGHT)){
+            Switch_In();
+        }
+        while (!Switch_Active(BUTTON_UP) && !Switch_Active(BUTTON_DOWN) && !Switch_Active(BUTTON_LEFT) && !Switch_Active(BUTTON_RIGHT)){
+            Switch_In();
+        }
+        ST7735_FillScreen(ST7735_BLACK);
+        ST7735_SetCursor(0,1);
+        ST7735_OutString((char*) " Then, everything changed,\n when Gigaland attacked.", 1, ST7735_WHITE);
+        ST7735_SetCursor(0, 10);
+        ST7735_OutString((char*) "     PRESS ANY BUTTON", 1, ST7735_WHITE);
+        ST7735_SetCursor(0, 11);
+        ST7735_OutString((char*) "       TO CONTINUE", 1, ST7735_WHITE);
+        Switch_In();
+        Clock_Delay1ms(200);
+        while (Switch_Active(BUTTON_UP) || Switch_Active(BUTTON_DOWN) || Switch_Active(BUTTON_LEFT) || Switch_Active(BUTTON_RIGHT)){
+            Switch_In();
+        }
+        while (!Switch_Active(BUTTON_UP) && !Switch_Active(BUTTON_DOWN) && !Switch_Active(BUTTON_LEFT) && !Switch_Active(BUTTON_RIGHT)) {
+            Switch_In();
+        }
+    }
+}
+
 void characterSelectInterruptRoutine() {
     comms.Out(0x8A);
 //    if (!nextStateFlag) return;
@@ -727,6 +762,7 @@ void TIMG12_IRQHandler(void){uint32_t pos,msg;
         if (currentGameState->stage == 0) {
             if (Switch_Active(BUTTON_LEFT)) lang = 1;
             else if (Switch_Active(BUTTON_RIGHT)) lang = 0;
+            if (lang >= 0) {langInterruptRoutine();}
         }
 
         if (currentGameState->stage == 2) {
