@@ -43,6 +43,8 @@ void Spaceship::Initialize(bool master) {
     this->hp = 3;
     this->master = master;
     this->degrees = 0;
+    this->width = 11;
+    this->height = 11;
 
     baseImage = SpaceShip0;
     if (!master) {
@@ -193,20 +195,22 @@ void Spaceship::drawShip() {
     ST7735_DrawBitmap(currentSave[0], currentSave[1], bitMap, width, height);
 }
 
-bool Spaceship::checkBullets(Bullet* bullets, uint32_t numBullets) {
+uint32_t Spaceship::checkBullets(Bullet* bullets, uint32_t numBullets) {
+    uint32_t counter = 0;
+
     for (int i = 0; i < numBullets; i++) {
         if (!bullets[i].exists) continue;
         if (bullets[i].getX() >= currentPos[0] && bullets[i].getX() + 3 <= currentPos[0] + width &&
                 bullets[i].getY() >= currentPos[1] && bullets[i].getY() + 3 <= currentPos[1] + height) {
             if (!bullets[i].originated) continue;
             bullets[i].exists = false;
-            return true;
+            counter ++;
         }
 
         if (!bullets[i].originated && bullets[i].source == master) bullets[i].originated = true;
     }
 
-    return false;
+    return counter;
 }
 
 void Spaceship::sendPosition(UART comms) {
@@ -228,7 +232,9 @@ void Spaceship::sendOrientation(UART comms) {
 void Spaceship::setFromComms(UART comms) {
     setOrientation(comms.getXAxis(), comms.getYAxis(), 10 * comms.getDegrees());
 
-    this->hp = comms.getOtherHp();
+    int8_t otherHp = comms.getOtherHp();
+
+    if (otherHp != -1) this->hp = otherHp;
 }
 
 void Spaceship::setComms(UART& comms) {

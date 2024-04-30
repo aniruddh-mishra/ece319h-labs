@@ -38,7 +38,7 @@ public:
     void rotateShip(int8_t);
     void rotateQuarters(uint32_t);
     bool fetchMap(uint32_t);
-    bool checkBullets(Bullet*, uint32_t);
+    uint32_t checkBullets(Bullet*, uint32_t);
     bool isMaster();
     void sendPosition(UART);
     void sendOrientation(UART);
