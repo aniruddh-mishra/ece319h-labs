@@ -84,3 +84,9 @@ void Sound_Empty(void){
     size = empty_Size;
     Sound_Start(7111);
 }
+
+void Sound_EnemyHit(void){
+    soundArray = enemyHit;
+    size = enemyHit_Size;
+    Sound_Start(7111);
+}

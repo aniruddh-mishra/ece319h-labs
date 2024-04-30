@@ -36,4 +36,6 @@ void Sound_Shoot(void);
 
 void Sound_Empty(void);
 
+void Sound_EnemyHit(void);
+
 #endif
