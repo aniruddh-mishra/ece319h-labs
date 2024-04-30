@@ -127,7 +127,7 @@
 // Requires (11 + size*size*6*8) bytes of transmission for each character
 uint32_t StX=0; // position along the horizontal axis 0 to 20
 uint32_t StY=0; // position along the vertical axis 0 to 15
-uint16_t StTextColor = ST7735_YELLOW;
+uint16_t StTextColor = ST7735_WHITE;
 
 #define ST7735_NOP     0x00
 #define ST7735_SWRESET 0x01
@@ -1128,8 +1128,12 @@ void ST7735_DrawChar(int16_t x, int16_t y, char c, int16_t textColor, int16_t bg
 uint32_t ST7735_DrawString(uint16_t x, uint16_t y, char *pt, int16_t textColor){
   uint32_t count = 0;
   if(x>13) return 0;
+  if (!ANIRUDDH_SCREEN) textColor = ST7735_SwapColor(textColor);
+
+  uint16_t bgColor = ST7735_BLACK;
+  if (!ANIRUDDH_SCREEN) bgColor = ~ST7735_BLACK;
   while(*pt){
-    ST7735_DrawCharS(x*10, y*6, *pt, textColor, ST7735_BLACK, 1);
+    ST7735_DrawCharS(x*10, y*6, *pt, textColor, bgColor, 1);
     pt++;
     y ++;
     if(y>27) return count;  // number of characters printed

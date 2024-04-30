@@ -6,6 +6,7 @@
  */
 
 #include "UART.h"
+#include "GameState.h"
 
 void UART2_Init() {
     // UART2 Initialization
@@ -59,8 +60,8 @@ UART::UART() {
     nextStateRead = true;
     characterSelectionRead = true;
     bulletRead = true;
-    otherHp = 3;
-    selfHp = 3;
+    otherHpRead = true;
+    selfHpRead = true;
 }
 
 void UART::Out(uint8_t data) {
@@ -90,11 +91,17 @@ bool UART::getBullet() {
     return true;
 }
 
-uint8_t UART::getSelfHp() {
+int8_t UART::getSelfHp() {
+    if (selfHpRead) return -1;
+
+    selfHpRead = true;
     return selfHp;
 }
 
-uint8_t UART::getOtherHp() {
+int8_t UART::getOtherHp() {
+    if (otherHpRead) return -1;
+
+    otherHpRead = true;
     return otherHp;
 }
 
@@ -131,10 +138,16 @@ void UART::putBullet() {
 }
 
 void UART::putSelfHp(uint8_t newHp) {
+    if (!selfHpRead) return;
+
+    selfHpRead = false;
     selfHp = newHp;
 }
 
 void UART::putOtherHp(uint8_t newHp) {
+    if (!otherHpRead) return;
+
+    otherHpRead = false;
     otherHp = newHp;
 }
 
@@ -157,6 +170,7 @@ void UART::putYAxis_2(uint8_t yAxis) {
 }
 
 void UART::putDegrees(uint8_t degrees) {
+    if (degrees > 36) return;
     this->degrees = degrees;
 }
 
@@ -172,9 +186,42 @@ void UART::setDegrees(uint32_t degrees) {
     this->degrees = degrees;
 }
 
-void UART::resetHp() {
-    otherHp = 3;
-    selfHp = 3;
+void UART::reset() {
+    nextStateRead = true;
+    characterSelectionRead = true;
+    bulletRead = true;
+    otherHpRead = true;
+    selfHpRead = true;
+}
+
+extern GameState* currentGameState;
+
+void UART::processFIFO() {
+    while (1) {
+        uint8_t data;
+        if (!messages.Get(&data)) break;
+
+        if (!(data & (~0x1F))) putXAxis_1(data);
+        else if ((data & (~0x1F)) == 0x20) putXAxis_2(data & (~0x20));
+        else if ((data & (~0x1F)) == 0x40) putYAxis_1(data & (~0x40));
+        else if ((data & (~0x1F)) == 0x60) putYAxis_2(data & (~0x60));
+        else if ((data & (~0x3F)) == 0xC0) putDegrees(data & (~0xC0));
+        else if ((data & (~0x1F)) == 0x80) {
+            if ((data & (~0x7)) == 0x80) {
+                if (data == 0x80) putBullet();
+                if ((data & (~0x1)) == 0x82) putCharacterSelection(data & (~0x82));
+            }
+            else if ((data & (~0x7)) == 0x88) {
+                if (data == 0x88) putNextStateFlag(currentGameState->stage != 5);
+                if (data == 0x89) putNextStateFlag(currentGameState->stage == 5);
+                else putNextStateFlag(true);
+            }
+            else if ((data & (~0x7)) == 0x90) {
+                if ((data & (~0x3)) == 0x90) putSelfHp(data & (~0x90));
+                else if ((data & (~0x3)) == 0x94) putOtherHp(data & (~0x94));
+            }
+        }
+    }
 }
 
 extern "C" void UART2_IRQHandler(void);
@@ -189,26 +236,7 @@ void UART2_IRQHandler() {
 
     while (!((UART2->STAT / 4) % 2)) {
         uint8_t data = UART2->RXDATA;
-
-        if (!(data & (~0x1F))) comms.putXAxis_1(data);
-        else if ((data & (~0x1F)) == 0x20) comms.putXAxis_2(data & (~0x20));
-        else if ((data & (~0x1F)) == 0x40) comms.putYAxis_1(data & (~0x40));
-        else if ((data & (~0x1F)) == 0x60) comms.putYAxis_2(data & (~0x60));
-        else if ((data & (~0x3F)) == 0xC0) comms.putDegrees(data & (~0xC0));
-        else if ((data & (~0x1F)) == 0x80) {
-            if ((data & (~0x7)) == 0x80) {
-                if (data == 0x80) comms.putBullet();
-                if ((data & (~0x1)) == 0x82) comms.putCharacterSelection(data & (~0x82));
-            }
-            else if ((data & (~0x7)) == 0x88) {
-                // Can add more flags but only using nextState flag
-                comms.putNextStateFlag(true);
-            }
-            else if ((data & (~0x7)) == 0x90) {
-                if ((data & (~0x3)) == 0x90) comms.putOtherHp(data & (~0x90));
-                else if ((data & (~0x3)) == 0x94) comms.putSelfHp(data & (~0x94));
-            }
-        }
+        comms.messages.Put(data);
     }
 
     // read all data, putting in FIFO

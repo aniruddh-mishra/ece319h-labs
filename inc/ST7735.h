@@ -222,7 +222,7 @@ enum initRFlags{
  */
 #define ST7735_TFTHEIGHT 160
 
-#define ANIRUDDH_SCREEN 1
+#define ANIRUDDH_SCREEN 0
 
 
 /**

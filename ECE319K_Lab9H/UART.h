@@ -11,6 +11,7 @@
 #include <ti/devices/msp/msp.h>
 #include "../inc/LaunchPad.h"
 #include "../inc/Clock.h"
+#include "FIFO.h"
 
 #define PA8INDEX  18 // UART1_TX
 #define PA22INDEX 46 // UART2_RX
@@ -26,8 +27,10 @@ class UART {
     bool bulletRead;
 
     uint8_t selfHp;
+    bool selfHpRead;
 
     uint8_t otherHp;
+    bool otherHpRead;
 
     uint32_t xAxis;
     uint32_t updatingXAxis;
@@ -38,14 +41,16 @@ class UART {
     uint32_t degrees;
 
 public:
+    Queue messages;
+
     UART();
 
     // Used by external client
     bool getNextStateFlag();
     int8_t getCharacterSelection();
     bool getBullet();
-    uint8_t getSelfHp();
-    uint8_t getOtherHp();
+    int8_t getSelfHp();
+    int8_t getOtherHp();
     uint32_t getXAxis();
     uint32_t getYAxis();
     uint32_t getDegrees();
@@ -67,7 +72,8 @@ public:
     void setXAxis(uint32_t);
     void setYAxis(uint32_t);
     void setDegrees(uint32_t);
-    void resetHp();
+    void reset();
+    void processFIFO();
 };
 
 #endif /* UART_H_ */

@@ -6,46 +6,75 @@
 #include <stdint.h>
 #include <ti/devices/msp/msp.h>
 #include "Sound.h"
-#include "sounds/sounds.h"
+#include "Sensors.h"
 #include "../inc/DAC5.h"
 #include "../inc/Timer.h"
+#include "../inc/Clock.h"
 
-// initialize a 11kHz SysTick, however no sound should be started
-// initialize any global variables
-// Initialize the 5 bit DAC
-void Sound_Init(uint32_t period, uint32_t priority){
-// write this
+extern Sensors inputs;
+int8_t backgroundTrack = -1;
+
+const uint8_t* soundArray;
+uint32_t size;
+
+void SysTick_IntArm(uint32_t period, uint32_t priority){
     SysTick->CTRL = 0x00;
     SysTick->LOAD = period - 1;
     SCB->SHP[1] = (SCB->SHP[1] & (~0xC0000000)) | priority << 30;
     SysTick->VAL = 0;
     SysTick->CTRL = 0x07;
 }
+
+// initialize a 11kHz SysTick, however no sound should be started
+// initialize any global variables
+// Initialize the 5 bit DAC
+void Sound_Init(void){
+    SysTick_IntArm(1, 0);
+}
+
 extern "C" void SysTick_Handler(void);
 void SysTick_Handler(void){ // called at 11 kHz
-  // output one value to DAC if a sound is active
-//    static uint32_t index = 0;
-//    // write this
-//    // output one value to DAC
-//    DAC5_Out(soundArray[index]);
-//    index = (index + 1) % size;
+    static uint32_t index = 0;
+    uint32_t pot_d = inputs.PotVal();
+    uint32_t shifter = (4095-pot_d)/512;
+    DAC5_Out(soundArray[index] >> shifter);
+    index = (index + 1) % size;
+    if (index == 0) {
+        Background_Song_Set(backgroundTrack);
+    }
 }
 
-//******* Sound_Start ************
-// This function does not output to the DAC. 
-// Rather, it sets a pointer and counter, and then enables the SysTick interrupt.
-// It starts the sound, and the SysTick ISR does the output
-// feel free to change the parameters
-// Sound should play once and stop
-// Input: pt is a pointer to an array of DAC outputs
-//        count is the length of the array
-// Output: none
-// special cases: as you wish to implement
-void Sound_Start(const uint8_t *pt, uint32_t count){
-// write this
-  
+void Sound_Start(uint32_t period){
+    SysTick->LOAD = period - 1;
+    SysTick->VAL = 0;
 }
 
-void Menu_Sound() {
+void Sound_Stop() {
+    SysTick->LOAD = 0;
+    SysTick->VAL = 0;
+}
 
+void Background_Song_Set(int8_t track) {
+    backgroundTrack = track;
+    switch(track) {
+        case 0:
+            soundArray = gameMusic;
+            size = gameMusic_Size;
+            break;
+        // case 1:
+        //     soundArray = menuLoop;
+        //     size = menuLoop_Size;
+        //     break;
+        default:
+            Sound_Stop();
+            break;
+    }
+
+    if (!SysTick->LOAD) Sound_Start(7111);
+}
+
+void Sound_Shoot(void){
+    soundArray = shoot;
+    size = shoot_Size;
+    Sound_Start(7111);
 }
