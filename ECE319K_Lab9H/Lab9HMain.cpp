@@ -455,6 +455,7 @@ void pauseRun() {
 
 void winRun() {
     Sound_Stop();
+    Sound_Explosion();
     ST7735_FillScreen(ST7735_BLACK);
 
     if (lang == 1) {
@@ -488,6 +489,7 @@ void winRun() {
 
 void loseRun() {
     Sound_Stop();
+    Sound_Explosion();
     ST7735_FillScreen(ST7735_BLACK);
 
     if (lang == 1) {
@@ -521,7 +523,7 @@ void loseRun() {
 
 void characterSelectInterruptRoutine() {
     comms.Out(0x8A);
-    if (!nextStateFlag) return;
+//    if (!nextStateFlag) return;
     if (Switch_Active(BUTTON_RIGHT)) {
         playerShip.Initialize(false);
         opponentShip.Initialize(true);
@@ -681,6 +683,7 @@ void gameEngineInterruptRoutine() {
         opponentShip.hp -= lossHealth;
         if (!opponentShip.hp) {
             comms.Out(opponentShip.hp | 0x90);
+            Sound_EnemyHit();
             sendPosition = false;
         }
     }

@@ -38,4 +38,6 @@ void Sound_Empty(void);
 
 void Sound_EnemyHit(void);
 
+void Sound_Explosion(void);
+
 #endif

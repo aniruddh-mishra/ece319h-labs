@@ -90,3 +90,9 @@ void Sound_EnemyHit(void){
     size = enemyHit_Size;
     Sound_Start(7111);
 }
+
+void Sound_Explosion(void){
+    soundArray = explosion;
+    size = explosion_Size;
+    Sound_Start(7111);
+}
